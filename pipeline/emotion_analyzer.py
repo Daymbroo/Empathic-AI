@@ -45,10 +45,10 @@ def fuzzy_intensity(score,params):
     else: return "tinggi"
 
 def predict_emotion(text):
-    tokens=tokenizer(text,return_tensors="np",padding=True,truncation=True)
-    ort_inputs={session.get_inputs()[0].name:tokens["input_ids"].astype(np.int64)}
-    outputs=session.run(None,ort_inputs)
-    probs=softmax_with_temp(outputs[0][0])
-    idx=np.argmax(probs)
-    label=label_names[idx]
-    return label,float(probs[idx])
+    tokens = tokenizer(text, return_tensors="np", padding=True, truncation=True)
+    ort_inputs = {session.get_inputs()[0].name: tokens["input_ids"].astype(np.int64)}
+    outputs = session.run(None, ort_inputs)
+    probs = softmax_with_temp(outputs[0][0])
+    idx = np.argmax(probs)
+    label = label_names[idx]
+    return label, float(probs[idx])
