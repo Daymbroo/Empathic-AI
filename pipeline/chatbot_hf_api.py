@@ -24,7 +24,18 @@ HEADERS = {
 # 🧠 Fungsi Pembuat Prompt & Generator Respon
 # =====================================================
 def build_prompt(history, user_text):
-    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history[-5:]])
+    if not history:
+        history = []
+
+    safe_history = []
+    for msg in history:
+        if isinstance(msg, dict) and "role" in msg and "content" in msg:
+            safe_history.append(msg)
+
+    context = "\n".join(
+        [f"{msg['role']}: {msg['content']}" for msg in safe_history[-5:]]
+    )
+
     return f"""Kamu adalah teman AI yang empatik, sabar, dan suportif.
 Balas dalam bahasa Indonesia dengan nada hangat dan alami.
 Berikan solusi realistis atau kata-kata penyemangat.
@@ -33,6 +44,7 @@ Panjang jawaban maksimal 10 kalimat.
 {context}
 user: {user_text}
 assistant:"""
+
 
 def generate_chat_response(user_id, user_text, history=[]):
     prompt = build_prompt(history, user_text)
