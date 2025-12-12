@@ -22,12 +22,15 @@ def chat(entry: JournalEntry):
     reply = chatbot_hf_api.generate_chat_response(entry.user_id, entry.text, entry.history)
     return reply
 
+from pipeline.emotion_analyzer import predict_emotion  # Pastikan menggunakan fungsi yang benar
+
 @app.post("/analyze")
 def analyze_emotion(entry: JournalEntry):
-    # Hanya ambil `text` untuk dianalisis
-    result = emotion_analyzer.analyze_journal_entry(entry.text)  # Hanya mengirimkan `text` tanpa `user_id`
-    mood_trend.log_mood(entry.user_id, result["emotion"])  # Hanya jika perlu menyimpan tren mood
-    return result
+    # Gantilah `analyze_journal_entry` menjadi `predict_emotion`
+    result = predict_emotion(entry.text)  # Menggunakan `text` saja
+    mood_trend.log_mood(entry.user_id, result[0])  # Log emosi (tetap simpan `user_id` jika dibutuhkan)
+    return {"emotion": result[0], "probability": result[1]}
+
 
 
 
@@ -44,6 +47,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
