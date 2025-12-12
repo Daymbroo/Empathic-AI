@@ -26,18 +26,11 @@ def chat(entry: JournalEntry):
 
 @app.post("/analyze")
 def analyze_emotion(entry: JournalEntry):
-    # Mengambil 'text' dan 'user_id' dari request
-    text = entry.text
-    user_id = entry.user_id
-
-    # Panggil model untuk analisis emosi
-    result = emotion_analyzer.analyze_journal_entry(text, user_id)
-    
-    # Log mood trend
-    mood_trend.log_mood(user_id, result["emotion"])
-    
-    # Return hasil analisis
+    # Hanya ambil `text` untuk dianalisis
+    result = emotion_analyzer.analyze_journal_entry(entry.text)  # Hanya mengirimkan `text` tanpa `user_id`
+    mood_trend.log_mood(entry.user_id, result["emotion"])  # Hanya jika perlu menyimpan tren mood
     return result
+
 
 
 @app.post("/feedback")
@@ -53,6 +46,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
