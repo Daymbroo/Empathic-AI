@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pipeline.emotion_analyzer import predict_emotion  # Pastikan menggunakan fungsi yang benar
 from pydantic import BaseModel
 from pipeline import emotion_analyzer, reflection_memory, mood_trend, chatbot_generator, chatbot_hf_api
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +48,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
