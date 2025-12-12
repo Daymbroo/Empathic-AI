@@ -1,0 +1,53 @@
+# ===== PYTHON BASICS =====
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ===== ENVIRONMENTS =====
+.env
+venv/
+.env.local
+*.env
+*.venv
+
+# ===== MODEL / DATA FILES =====
+*.onnx
+*.onnx.data
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# ===== CACHE / LOGS =====
+*.log
+*.out
+*.tmp
+*.bak
+*.swp
+.cache/
+logs/
+.DS_Store
+.idea/
+.vscode/
+
+# ===== HUGGINGFACE & TORCH =====
+huggingface/
+transformers_cache/
+torch_cache/
+~$*
+
+# ===== TEST / DEBUG FILES =====
+test_*.py
+test_results/
+notebooks/
+*.ipynb
+
+# ===== BUILD / DIST =====
+build/
+dist/
+*.egg-info/
+*.spec
+
+# ===== OS TRASH =====
+Thumbs.db
+Desktop.ini
