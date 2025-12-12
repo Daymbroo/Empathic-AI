@@ -1,0 +1,13 @@
+{
+  "user_id": "user01",
+  "emotion_result": {
+    "user_id": "user01",
+    "emotion": "sadness",
+    "intensity": "tinggi",
+    "score": 0.682,
+    "recommendation": "Hubungi teman dekat yang kamu percaya 🗨",
+    "ai_response": "Aku tahu ini gak mudah, tapi kamu udah hebat bisa bertahan 💭. Kamu luar biasa kuat untuk menghadapi semuanya ✨."
+  },
+  "trend_summary": "Kamu sering merasa sedih akhir-akhir ini 💭. Gak apa-apa, tapi jangan lupa istirahat ya 🌙.",
+  "reflection_reply": "Senang dengarnya 🥰 Kadang menulis bisa jadi obat hati terbaik."
+}
