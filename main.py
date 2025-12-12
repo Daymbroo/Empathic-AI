@@ -15,7 +15,6 @@ app.add_middleware(
 )
 
 class JournalEntry(BaseModel):
-    user_id: str
     text: str
     history: list | None = None
 
@@ -46,6 +45,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
