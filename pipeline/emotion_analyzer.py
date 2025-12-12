@@ -45,10 +45,22 @@ def fuzzy_intensity(score,params):
     else: return "tinggi"
 
 def predict_emotion(text):
+    # Tokenize the text and ensure that both input_ids and attention_mask are provided
     tokens = tokenizer(text, return_tensors="np", padding=True, truncation=True)
-    ort_inputs = {session.get_inputs()[0].name: tokens["input_ids"].astype(np.int64)}
+    
+    # Create input dictionary for the model
+    ort_inputs = {
+        session.get_inputs()[0].name: tokens["input_ids"].astype(np.int64),  # input_ids
+        session.get_inputs()[1].name: tokens["attention_mask"].astype(np.int64)  # attention_mask
+    }
+    
+    # Run the model
     outputs = session.run(None, ort_inputs)
+    
+    # Process the output probabilities
     probs = softmax_with_temp(outputs[0][0])
     idx = np.argmax(probs)
     label = label_names[idx]
+    
     return label, float(probs[idx])
+
