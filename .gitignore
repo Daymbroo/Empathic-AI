@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 
 # ===== ENVIRONMENTS =====
-.env
 venv/
 .env.local
 *.env
