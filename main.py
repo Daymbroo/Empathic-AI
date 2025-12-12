@@ -17,6 +17,9 @@ app.add_middleware(
 
 class JournalEntry(BaseModel):
     text: str
+    user_id: str
+    history: list | None = None
+
 
 @app.post("/chat")
 def chat(entry: JournalEntry):
@@ -48,6 +51,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
