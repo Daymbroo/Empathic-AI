@@ -9,7 +9,7 @@ app = FastAPI(title="Empathic AI Companion", version="1.0")
 # Tambahkan middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # kalau mau lebih aman: ["http://localhost:50800"]
+    allow_origins=["*"],  # sementara, untuk development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,6 +58,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
