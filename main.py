@@ -22,9 +22,16 @@ class JournalEntry(BaseModel):
 
 
 @app.post("/chat")
-def chat(entry: JournalEntry):
-    reply = chatbot_hf_api.generate_chat_response(entry.user_id, entry.text, entry.history)
-    return reply
+def chat(entry: ChatRequest):
+    history = entry.history or []
+
+    reply = chatbot_hf_api.generate_chat_response(
+        entry.user_id,
+        entry.text,
+        history
+    )
+
+    return {"reply": reply}
 
 from pipeline.emotion_analyzer import predict_emotion  # Pastikan menggunakan fungsi yang benar
 
@@ -51,6 +58,7 @@ def get_mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
