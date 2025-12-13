@@ -22,6 +22,12 @@ app.add_middleware(
 # REQUEST MODELS
 # =========================
 
+class ChatRequest(BaseModel):
+    user_id: str
+    text: str
+    history: list | None = None
+
+
 class AnalyzeRequest(BaseModel):
     text: str
     user_id: str
@@ -75,3 +81,22 @@ def send_feedback(entry: FeedbackRequest):
 @app.get("/")
 def home():
     return {"message": "Empathic AI API is running ✅"}
+
+@app.post("/chat")
+def chat(entry: ChatRequest):
+    history = entry.history or []
+
+    reply = chatbot_hf_api.generate_chat_response(
+        user_id=entry.user_id,
+        user_text=entry.text,
+        history=history
+    )
+
+    return {
+        "reply": reply,
+        "history": history + [
+            {"role": "user", "content": entry.text},
+            {"role": "assistant", "content": reply},
+        ]
+    }
+
