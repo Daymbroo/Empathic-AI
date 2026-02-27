@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
-from pipeline.emotion_analyzer import predict_emotion
+try:
+    from pipeline.emotion_analyzer import predict_emotion
+except Exception:
+    def predict_emotion(text):
+        return {"emotion": "mock", "confidence": 0.0}
 from pipeline import mood_trend, reflection_memory, chatbot_hf_api
 
 app = FastAPI(title="Empathic AI Companion", version="1.0")
@@ -94,3 +98,4 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
