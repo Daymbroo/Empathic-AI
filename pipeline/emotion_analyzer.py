@@ -27,8 +27,12 @@ download_file(URL_ONNX, MODEL_ONNX)
 download_file(URL_DATA, MODEL_DATA)
 
 # load onnx
-session = ort.InferenceSession(MODEL_ONNX, providers=["CPUExecutionProvider"])
-print("🧠 ONNX model loaded successfully!")
+import os
+
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    session = None
+else:
+    session = ort.InferenceSession("pipeline/model.onnx")
 
 tokenizer = XLMRobertaTokenizer.from_pretrained("xlm-roberta-base")
 label_names = ["anger","fear","happy","harassment","love","neutral","racist","sadness","violence"]
