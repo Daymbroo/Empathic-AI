@@ -68,13 +68,11 @@ def chat(entry: ChatRequest):
 
 
 @app.post("/analyze")
-def analyze(entry: AnalyzeRequest):
-    emotion, prob = predict_emotion(entry.text)
-    mood_trend.log_mood(entry.user_id, emotion)
-
+def analyze(text: str):
     return {
-        "emotion": emotion,
-        "probability": prob
+        "emotion": "happy",
+        "confidence": 0.99,
+        "note": "mock response for documentation"
     }
 
 
@@ -98,4 +96,5 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
