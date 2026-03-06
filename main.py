@@ -70,8 +70,14 @@ def chat(entry: ChatRequest):
 
 @app.post("/analyze")
 def analyze(text: str):
-    result = predict_emotion(text)
-    return result
+    try:
+        result = predict_emotion(text)
+        return result
+    except Exception as e:
+        return {
+            "error": str(e),
+            "text": text
+        }
 
 
 @app.post("/feedback")
@@ -94,6 +100,7 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
