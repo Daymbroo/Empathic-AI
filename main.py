@@ -5,9 +5,7 @@ from typing import List, Optional
 
 from pipeline.emotion_analyzer import load_model
 
-@app.on_event("startup")
-def startup_event():
-    load_model()
+
 
 #test
 try:
@@ -54,6 +52,10 @@ class FeedbackRequest(BaseModel):
 # =========================
 # ENDPOINTS
 # =========================
+
+@app.on_event("startup")
+def startup_event():
+    load_model()
 
 @app.post("/chat")
 def chat(entry: ChatRequest):
@@ -107,6 +109,7 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
