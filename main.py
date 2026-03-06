@@ -10,6 +10,7 @@ except Exception:
         return {"emotion": "mock", "confidence": 0.0}
 from pipeline import mood_trend, reflection_memory, chatbot_hf_api
 
+
 app = FastAPI(title="Empathic AI Companion", version="1.0")
 
 # CORS
@@ -69,11 +70,8 @@ def chat(entry: ChatRequest):
 
 @app.post("/analyze")
 def analyze(text: str):
-    return {
-        "emotion": "happy",
-        "confidence": 0.99,
-        "note": "mock response for documentation"
-    }
+    result = predict_emotion(text)
+    return result
 
 
 @app.post("/feedback")
@@ -96,5 +94,6 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
