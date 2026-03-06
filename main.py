@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
+#test
 try:
     from pipeline.emotion_analyzer import predict_emotion
 except Exception:
@@ -100,6 +101,7 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
