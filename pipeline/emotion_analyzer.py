@@ -1,21 +1,18 @@
 import os
-import requests
-import onnxruntime as ort
 import numpy as np
+import onnxruntime as ort
 from scipy.special import softmax
 from transformers import XLMRobertaTokenizerFast
+from huggingface_hub import hf_hub_download
 
-# =========================
+# ===============================
 # CONFIG
-# =========================
+# ===============================
 
-MODEL_DIR = "emotion_onnx"
-MODEL_ONNX = os.path.join(MODEL_DIR, "xlmr_emotion_model_final.onnx")
-MODEL_DATA = os.path.join(MODEL_DIR, "xlmr_emotion_model_final.onnx.data")
+HF_REPO = "Felik4949/xlmr-emotion-onnx"
 
-HF_BASE = "https://huggingface.co/Felik4949/xlmr-emotion-onnx/resolve/main"
-URL_ONNX = f"{HF_BASE}/xlmr_emotion_model_final.onnx"
-URL_DATA = f"{HF_BASE}/xlmr_emotion_model_final.onnx.data"
+MODEL_ONNX = "xlmr_emotion_model_final.onnx"
+MODEL_DATA = "xlmr_emotion_model_final.onnx.data"
 
 LABEL_NAMES = [
     "anger",
@@ -29,82 +26,69 @@ LABEL_NAMES = [
     "violence",
 ]
 
-# =========================
+# ===============================
 # GLOBAL OBJECTS
-# =========================
+# ===============================
 
 session = None
 tokenizer = None
 
-# =========================
-# DOWNLOAD MODEL
-# =========================
 
-def download_file(url, dest):
-    if os.path.exists(dest):
-        print(f"📦 File already exists: {dest}")
-        return
-
-    print(f"🔽 Downloading {os.path.basename(dest)} ...")
-
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-
-    r = requests.get(url, stream=True, timeout=60)
-    r.raise_for_status()
-
-    with open(dest, "wb") as f:
-        for chunk in r.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-
-    print(f"✅ Saved to {dest}")
-
-# =========================
-# LOAD MODEL (dipanggil saat startup FastAPI)
-# =========================
+# ===============================
+# LOAD MODEL (called at startup)
+# ===============================
 
 def load_model():
     global session, tokenizer
 
-    print("🚀 Initializing emotion model...")
+    print("🚀 Loading emotion model from HuggingFace...")
 
-    # download model jika belum ada
-    download_file(URL_ONNX, MODEL_ONNX)
-    download_file(URL_DATA, MODEL_DATA)
+    # download ONNX structure
+    onnx_path = hf_hub_download(
+        repo_id=HF_REPO,
+        filename=MODEL_ONNX
+    )
 
-    # load tokenizer
+    # download external tensor weights
+    data_path = hf_hub_download(
+        repo_id=HF_REPO,
+        filename=MODEL_DATA
+    )
+
+    print("📦 ONNX file:", onnx_path)
+    print("📦 DATA file:", data_path)
+
     print("🔤 Loading tokenizer...")
     tokenizer = XLMRobertaTokenizerFast.from_pretrained("xlm-roberta-base")
     print("✅ Tokenizer loaded")
 
-    # load ONNX model
-    print(f"📦 Loading ONNX model: {MODEL_ONNX}")
+    print("🧠 Loading ONNX model...")
 
     session = ort.InferenceSession(
-        MODEL_ONNX,
+        onnx_path,
         providers=["CPUExecutionProvider"]
     )
 
-    print("🧠 ONNX model loaded successfully")
+    print("✅ ONNX model loaded successfully")
 
 
-# =========================
+# ===============================
 # UTILITY
-# =========================
+# ===============================
 
 def softmax_with_temp(logits, temp=2.0):
     logits = logits / temp
     return softmax(logits)
 
 
-# =========================
+# ===============================
 # PREDICTION FUNCTION
-# =========================
+# ===============================
 
 def predict_emotion(text: str):
 
     if session is None:
-        raise RuntimeError("Model session not initialized")
+        raise RuntimeError("Model not initialized")
 
     if tokenizer is None:
         raise RuntimeError("Tokenizer not initialized")
