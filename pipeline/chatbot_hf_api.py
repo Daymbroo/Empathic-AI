@@ -10,8 +10,7 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
-    print("❌ HF_TOKEN tidak ditemukan. Pastikan sudah diset di file .env")
-    HF_TOKEN = None
+    raise ValueError("✘ HF_TOKEN tidak ditemukan. Pastikan sudah diset di file .env")
 
 API_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL_NAME = "google/gemma-2-2b-it:nebius"
@@ -87,5 +86,6 @@ def generate_chat_response(user_id, user_text, history=[]):
             "Aku paham kamu butuh teman bicara, tapi koneksi ke server lagi bermasalah 😔",
             "Server AI-nya lagi error. Coba lagi beberapa saat lagi ya 💭"
         ])}
+
 
 
