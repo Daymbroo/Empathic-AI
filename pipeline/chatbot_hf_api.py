@@ -6,86 +6,162 @@ from dotenv import load_dotenv
 # =====================================================
 # 🔧 Setup Token & Endpoint
 # =====================================================
+
 load_dotenv()
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
-    raise ValueError("✘ HF_TOKEN tidak ditemukan. Pastikan sudah diset di file .env")
+    raise ValueError("HF_TOKEN tidak ditemukan. Pastikan sudah diset di Railway Variables atau .env")
 
 API_URL = "https://router.huggingface.co/v1/chat/completions"
-MODEL_NAME = "google/gemma-2-2b-it:nebius"
+
+# Model utama dan fallback
+PRIMARY_MODEL = "google/gemma-2-2b-it"
+FALLBACK_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 
 HEADERS = {
     "Authorization": f"Bearer {HF_TOKEN}",
     "Content-Type": "application/json"
 }
 
+
 # =====================================================
-# 🧠 Fungsi Pembuat Prompt & Generator Respon
+# 🧠 Prompt Builder
 # =====================================================
+
 def build_prompt(history, user_text):
+
     safe_history = history[-5:] if history else []
 
     context = "\n".join(
-        f"{msg.get('role', 'user')}: {msg.get('content', '')}"
+        f"{msg.get('role','user')}: {msg.get('content','')}"
         for msg in safe_history
     )
 
     return f"""
 Kamu adalah AI yang empatik dan suportif.
 Balas dalam bahasa Indonesia dengan nada hangat.
-Panjang maksimal 8 kalimat.
+Panjang maksimal 6 kalimat.
 
 {context}
+
 user: {user_text}
 assistant:
 """
 
 
+# =====================================================
+# 🤖 Fungsi Call HF Router
+# =====================================================
 
-def generate_chat_response(user_id, user_text, history=[]):
-    prompt = build_prompt(history, user_text)
+def call_hf_model(model_name, prompt):
 
     payload = {
-        "model": MODEL_NAME,
+        "model": model_name,
         "messages": [
-            {"role": "system", "content": "You are an empathetic assistant that helps users regulate emotions and reflect positively."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "You are an empathetic assistant helping users understand emotions and reflect positively."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
         ],
         "max_tokens": 200,
-        "temperature": 0.85,
-        "top_p": 0.9
+        "temperature": 0.8,
+        "top_p": 0.9,
+        "stream": False
     }
 
+    response = requests.post(
+        API_URL,
+        headers=HEADERS,
+        json=payload,
+        timeout=60
+    )
+
+    return response
+
+
+# =====================================================
+# 💬 Chat Generator
+# =====================================================
+
+def generate_chat_response(user_id, user_text, history=None):
+
+    history = history or []
+
+    prompt = build_prompt(history, user_text)
+
     try:
-        print("📡 [DEBUG] Sending request to Hugging Face Router...")
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=45)
-        print("📌 [DEBUG] Status:", response.status_code)
-        print("📌 [DEBUG] Raw response:", response.text)
+
+        print("📡 Trying PRIMARY MODEL:", PRIMARY_MODEL)
+
+        response = call_hf_model(PRIMARY_MODEL, prompt)
+
+        print("📌 Status:", response.status_code)
+        print("📌 Raw:", response.text)
 
         if response.status_code == 200:
+
             data = response.json()
-            choices = data.get("choices", [])
-            if choices and "message" in choices[0]:
-                reply = choices[0]["message"]["content"].strip()
-                return {"reply": reply}
 
-        # Fallback handling for gated/invalid model
-        if response.status_code in [401, 403]:
-            return {"reply": "Token Hugging Face kamu tidak valid atau belum mengaktifkan akses inference 😔"}
+            reply = data["choices"][0]["message"]["content"].strip()
 
-        # Kalau server gemma lagi down
+            return {
+                "user_id": user_id,
+                "model": PRIMARY_MODEL,
+                "reply": reply
+            }
+
+        # =====================================================
+        # Fallback model jika gemma gagal
+        # =====================================================
+
+        print("⚠️ Gemma gagal, mencoba fallback model...")
+
+        response = call_hf_model(FALLBACK_MODEL, prompt)
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            reply = data["choices"][0]["message"]["content"].strip()
+
+            return {
+                "user_id": user_id,
+                "model": FALLBACK_MODEL,
+                "reply": reply
+            }
+
+        # =====================================================
+        # Error Handling
+        # =====================================================
+
+        if response.status_code == 401:
+            return {"reply": "Token HuggingFace tidak valid 🔑"}
+
+        if response.status_code == 403:
+            return {"reply": "Model tidak memiliki akses inference 😔"}
+
+        if response.status_code == 429:
+            return {"reply": "API HuggingFace sedang sibuk. Coba lagi sebentar lagi ⏳"}
+
         if response.status_code == 503:
-            return {"reply": "Server model sedang sibuk. Coba lagi sebentar lagi ya 🌙"}
+            return {"reply": "Server model sedang overload. Coba lagi beberapa saat lagi 🌙"}
 
-        return {"reply": "Maaf, aku lagi gak bisa merespons sekarang 😔"}
+        return {"reply": "Maaf, aku sedang tidak bisa merespon saat ini 😔"}
 
     except Exception as e:
-        print("💥 [ERROR] Gagal menghubungi API:", str(e))
-        return {"reply": random.choice([
-            "Aku paham kamu butuh teman bicara, tapi koneksi ke server lagi bermasalah 😔",
-            "Server AI-nya lagi error. Coba lagi beberapa saat lagi ya 💭"
-        ])}
 
+        print("💥 Error:", str(e))
 
-
+        return {
+            "reply": random.choice([
+                "Aku ingin membantu, tapi koneksi ke server AI sedang bermasalah 😔",
+                "Sepertinya server AI sedang error. Coba lagi sebentar ya 💭",
+                "Maaf ya, aku lagi tidak bisa merespon sekarang."
+            ])
+        }
