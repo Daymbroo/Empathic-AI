@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
+from pipeline.emotion_analyzer import load_model
+
+@app.on_event("startup")
+def startup_event():
+    load_model()
+
 #test
 try:
     from pipeline.emotion_analyzer import predict_emotion
@@ -101,6 +107,7 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
+
 
 
 
