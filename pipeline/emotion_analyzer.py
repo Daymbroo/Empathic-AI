@@ -6,8 +6,9 @@ from scipy.special import softmax
 from transformers import XLMRobertaTokenizerFast
 
 # =========================
-# PATH & CONFIG
+# CONFIG
 # =========================
+
 MODEL_DIR = "emotion_onnx"
 MODEL_ONNX = os.path.join(MODEL_DIR, "xlmr_emotion_model_final.onnx")
 MODEL_DATA = os.path.join(MODEL_DIR, "xlmr_emotion_model_final.onnx.data")
@@ -29,9 +30,17 @@ LABEL_NAMES = [
 ]
 
 # =========================
-# DOWNLOAD HELPER
+# GLOBAL OBJECTS
 # =========================
-def download_file(url: str, dest: str):
+
+session = None
+tokenizer = None
+
+# =========================
+# DOWNLOAD MODEL
+# =========================
+
+def download_file(url, dest):
     if os.path.exists(dest):
         print(f"📦 File already exists: {dest}")
         return
@@ -50,79 +59,80 @@ def download_file(url: str, dest: str):
 
     print(f"✅ Saved to {dest}")
 
+# =========================
+# LOAD MODEL (dipanggil saat startup FastAPI)
+# =========================
+
+def load_model():
+    global session, tokenizer
+
+    print("🚀 Initializing emotion model...")
+
+    # download model jika belum ada
+    download_file(URL_ONNX, MODEL_ONNX)
+    download_file(URL_DATA, MODEL_DATA)
+
+    # load tokenizer
+    print("🔤 Loading tokenizer...")
+    tokenizer = XLMRobertaTokenizerFast.from_pretrained("xlm-roberta-base")
+    print("✅ Tokenizer loaded")
+
+    # load ONNX model
+    print(f"📦 Loading ONNX model: {MODEL_ONNX}")
+
+    session = ort.InferenceSession(
+        MODEL_ONNX,
+        providers=["CPUExecutionProvider"]
+    )
+
+    print("🧠 ONNX model loaded successfully")
+
 
 # =========================
-# DOWNLOAD MODEL FILES
+# UTILITY
 # =========================
-download_file(URL_ONNX, MODEL_ONNX)
-download_file(URL_DATA, MODEL_DATA)
 
-# =========================
-# LOAD TOKENIZER
-# =========================
-print("🔤 Loading tokenizer...")
-tokenizer = XLMRobertaTokenizerFast.from_pretrained("xlm-roberta-base")
-print("✅ Tokenizer loaded")
-
-# =========================
-# LOAD ONNX MODEL
-# =========================
-print(f"📦 Loading ONNX model: {MODEL_ONNX}")
-
-if not os.path.exists(MODEL_ONNX):
-    raise RuntimeError(f"ONNX model not found: {MODEL_ONNX}")
-
-session = ort.InferenceSession(
-    MODEL_ONNX,
-    providers=["CPUExecutionProvider"],
-)
-
-print("🧠 ONNX model loaded successfully")
-
-
-# =========================
-# UTILITY FUNCTIONS
-# =========================
 def softmax_with_temp(logits, temp=2.0):
     logits = logits / temp
     return softmax(logits)
 
 
 # =========================
-# MAIN PREDICTION FUNCTION
+# PREDICTION FUNCTION
 # =========================
+
 def predict_emotion(text: str):
+
     if session is None:
-        raise RuntimeError("ONNX session not loaded")
+        raise RuntimeError("Model session not initialized")
 
-    if not text or not isinstance(text, str):
-        raise ValueError("Input text must be a non-empty string")
+    if tokenizer is None:
+        raise RuntimeError("Tokenizer not initialized")
 
-    # Tokenize input
+    if not text:
+        raise ValueError("Input text cannot be empty")
+
     tokens = tokenizer(
         text,
         return_tensors="np",
         padding=True,
         truncation=True,
-        max_length=128,
+        max_length=128
     )
 
     ort_inputs = {
         session.get_inputs()[0].name: tokens["input_ids"].astype(np.int64),
-        session.get_inputs()[1].name: tokens["attention_mask"].astype(np.int64),
+        session.get_inputs()[1].name: tokens["attention_mask"].astype(np.int64)
     }
 
-    # Run inference
     outputs = session.run(None, ort_inputs)
 
     probs = softmax_with_temp(outputs[0][0])
 
     idx = int(np.argmax(probs))
-    label = LABEL_NAMES[idx]
-    confidence = float(probs[idx])
 
     return {
-        "emotion": label,
-        "confidence": confidence,
-        "text": text,
+        "emotion": LABEL_NAMES[idx],
+        "confidence": float(probs[idx]),
+        "text": text
     }
