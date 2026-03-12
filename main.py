@@ -5,8 +5,6 @@ from typing import List, Optional
 
 from pipeline.emotion_analyzer import load_model
 
-
-
 #test
 try:
     from pipeline.emotion_analyzer import predict_emotion
@@ -47,6 +45,7 @@ class AnalyzeRequest(BaseModel):
 class FeedbackRequest(BaseModel):
     user_id: str
     action: str  # accept / reject
+    emotion: Optional[str] = "neutral"
     feedback_text: Optional[str] = None
 
 # =========================
@@ -68,24 +67,33 @@ def chat(entry: ChatRequest):
         if m.role and m.content
     ]
 
-    reply = chatbot_hf_api.generate_chat_response(
+    result = chatbot_hf_api.generate_chat_response(
         entry.user_id,
         entry.text,
         safe_history
     )
 
-    return {"reply": reply}
+    # FIX: chatbot_hf_api returns {"reply": "text", ...} dict
+    # We need to unwrap it so the final response is {"reply": "string"}
+    if isinstance(result, dict):
+        reply_text = result.get("reply", "Maaf, aku tidak bisa merespon saat ini 😔")
+    else:
+        reply_text = str(result)
+
+    return {"reply": reply_text}
 
 
+# FIX: Changed from `analyze(text: str)` to `analyze(entry: AnalyzeRequest)`
+# so it accepts JSON body from Flutter app instead of query parameter
 @app.post("/analyze")
-def analyze(text: str):
+def analyze(entry: AnalyzeRequest):
     try:
-        result = predict_emotion(text)
+        result = predict_emotion(entry.text)
         return result
     except Exception as e:
         return {
             "error": str(e),
-            "text": text
+            "text": entry.text
         }
 
 
@@ -93,7 +101,7 @@ def analyze(text: str):
 def feedback(entry: FeedbackRequest):
     response = reflection_memory.user_feedback(
         entry.user_id,
-        "ai_reply",
+        entry.emotion,  # FIX: use emotion from request instead of hardcoded
         entry.action,
         entry.feedback_text
     )
@@ -109,10 +117,3 @@ def mood(user_id: str):
 @app.get("/")
 def home():
     return {"message": "Empathic AI Gemma is running ✅"}
-
-
-
-
-
-
-
